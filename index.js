@@ -14,6 +14,13 @@ const port = process.env.PORT || 3000;
 const saltRounds = 10;
 console.log(`Starting app, PORT=${port}, NODE_ENV=${process.env.NODE_ENV}`);
 
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err.message);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled rejection:", reason);
+});
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -27,29 +34,17 @@ app.use(express.static("public"));
 app.use(passport.initialize());
 app.use(passport.session());
 
-const db = new pg.Pool(
-  process.env.DATABASE_URL
-    ? {
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-      }
-    : {
-        user: process.env.PG_USER,
-        host: process.env.PG_HOST,
-        database: process.env.PG_DATABASE,
-        password: process.env.PG_PASSWORD,
-        port: process.env.PG_PORT,
-        ssl: { rejectUnauthorized: false },
-      },
-);
-db.connect((err, client, release) => {
-  if (err) {
-    console.error("Database connection error:", err.message);
-  } else {
-    console.log("Database connected successfully");
-    release();
-  }
+const db = new pg.Pool({
+  user: process.env.PG_USER,
+  host: process.env.PG_HOST,
+  database: process.env.PG_DATABASE,
+  password: process.env.PG_PASSWORD,
+  port: parseInt(process.env.PG_PORT) || 5432,
+  ssl: { rejectUnauthorized: false },
 });
+console.log(
+  `DB config: host=${process.env.PG_HOST}, db=${process.env.PG_DATABASE}`,
+);
 
 app.get("/", (req, res) => {
   res.render("home.ejs");
