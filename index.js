@@ -9,7 +9,7 @@ import session from "express-session";
 import env from "dotenv";
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const saltRounds = 10;
 env.config();
 
@@ -18,7 +18,7 @@ app.use(
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
-  })
+  }),
 );
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
@@ -61,7 +61,7 @@ app.get("/secrets", async (req, res) => {
     try {
       const result = await db.query(
         "SELECT secret FROM users WHERE email = $1",
-        [req.user.email]
+        [req.user.email],
       );
       console.log(result);
       const secret = result.rows[0].secret;
@@ -93,7 +93,7 @@ app.get(
   "/auth/google",
   passport.authenticate("google", {
     scope: ["profile", "email"],
-  })
+  }),
 );
 
 app.get(
@@ -101,7 +101,7 @@ app.get(
   passport.authenticate("google", {
     successRedirect: "/secrets",
     failureRedirect: "/login",
-  })
+  }),
 );
 
 app.post(
@@ -109,7 +109,7 @@ app.post(
   passport.authenticate("local", {
     successRedirect: "/secrets",
     failureRedirect: "/login",
-  })
+  }),
 );
 
 app.post("/register", async (req, res) => {
@@ -130,7 +130,7 @@ app.post("/register", async (req, res) => {
         } else {
           const result = await db.query(
             "INSERT INTO users (email, password) VALUES ($1, $2) RETURNING *",
-            [email, hash]
+            [email, hash],
           );
           const user = result.rows[0];
           req.login(user, (err) => {
@@ -187,7 +187,7 @@ passport.use(
     } catch (err) {
       console.log(err);
     }
-  })
+  }),
 );
 
 passport.use(
@@ -196,7 +196,8 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:3000/auth/google/secrets",
+      callbackURL:
+        process.env.CALLBACK_URL || "http://localhost:3000/auth/google/secrets",
       userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
     },
     async (accessToken, refreshToken, profile, cb) => {
@@ -208,7 +209,7 @@ passport.use(
         if (result.rows.length === 0) {
           const newUser = await db.query(
             "INSERT INTO users (email, password) VALUES ($1, $2)",
-            [profile.email, "google"]
+            [profile.email, "google"],
           );
           return cb(null, newUser.rows[0]);
         } else {
@@ -217,8 +218,8 @@ passport.use(
       } catch (err) {
         return cb(err);
       }
-    }
-  )
+    },
+  ),
 );
 passport.serializeUser((user, cb) => {
   cb(null, user);
