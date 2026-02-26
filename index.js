@@ -9,9 +9,10 @@ import session from "express-session";
 import env from "dotenv";
 
 const app = express();
+env.config();
 const port = process.env.PORT || 3000;
 const saltRounds = 10;
-env.config();
+console.log(`Starting app, PORT=${port}, NODE_ENV=${process.env.NODE_ENV}`);
 
 app.use(
   session({
